@@ -1,0 +1,44 @@
+name: QA Cucumber Framework CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Start Docker container for API
+        run: |
+          docker run -d --rm --name qa-practice-api \
+            -p 8887:8081 rvancea/qa-practice-api:latest
+          sleep 10
+
+      - name: Run API Tests only
+        run: |
+          mvn test -Dcucumber.features="src/test/resources/features/backend"
+
+      - name: Generate Report
+        if: always()
+        run: |
+          npm install
+          node generate-report.js
+
+      - name: Upload Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: cucumber-report
+          path: target/cucumber-reports/
