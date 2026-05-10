@@ -12,6 +12,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 
 public class Hooks {
@@ -19,20 +20,40 @@ public class Hooks {
     public static WebDriver driver;
 
     @Before
-    public void setUp() {
-        WebDriverManager.chromedriver().setup();
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--start-maximized");
-        options.addArguments("--disable-notifications");
-        options.addArguments("--disable-popup-blocking");
-        options.addArguments("--disable-extensions");
-        driver = new ChromeDriver(options);
+    public void setUp(Scenario scenario) {
+        Collection<String> tags = scenario.getSourceTagNames();
+        
+        // เปิด Browser เฉพาะ Frontend scenarios เท่านั้น
+        boolean isFrontend = tags.stream()
+            .noneMatch(tag -> tag.equals("@backend") || tag.equals("@api"));
 
-        driver.manage().timeouts()
-              .pageLoadTimeout(Duration.ofSeconds(120))
-              .implicitlyWait(Duration.ofSeconds(10));
+        // ตรวจสอบว่าเป็น API feature หรือไม่
+        String uri = scenario.getUri().toString();
+        boolean isApiTest = uri.contains("backend") || uri.contains("employees");
 
-        loadPageWithRetry("https://qa-practice.razvanvancea.ro/auth_ecommerce.html");
+        if (!isApiTest) {
+            WebDriverManager.chromedriver().setup();
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--start-maximized");
+            options.addArguments("--disable-notifications");
+            options.addArguments("--disable-popup-blocking");
+            options.addArguments("--disable-extensions");
+            options.addArguments("--headless");
+            options.addArguments("--no-sandbox");
+            options.addArguments("--disable-dev-shm-usage");
+            driver = new ChromeDriver(options);
+
+            driver.manage().timeouts()
+                  .pageLoadTimeout(Duration.ofSeconds(120))
+                  .implicitlyWait(Duration.ofSeconds(10));
+
+            loadPageWithRetry(
+                "https://qa-practice.razvanvancea.ro/auth_ecommerce.html"
+            );
+        } else {
+            driver = null;
+            System.out.println("API Test - No browser needed");
+        }
     }
 
     private void loadPageWithRetry(String url) {
@@ -52,32 +73,33 @@ public class Hooks {
 
     @After
     public void tearDown(Scenario scenario) {
-        if (scenario.isFailed() && driver != null) {
-            try {
-                byte[] screenshot = ((TakesScreenshot) driver)
-                        .getScreenshotAs(OutputType.BYTES);
-                scenario.attach(screenshot, "image/png", "Screenshot");
-            } catch (Exception e) {
-                System.out.println("Screenshot failed: " + e.getMessage());
-            }
-        }
-
-        // Logout ก่อนปิด Browser เพื่อ clear Server Session
-        try {
-            List<WebElement> logoutBtn = driver.findElements(
-                By.linkText("Log Out")
-            );
-            if (!logoutBtn.isEmpty()) {
-                logoutBtn.get(0).click();
-                System.out.println("Logged out successfully");
-                try { Thread.sleep(1000); } catch (Exception e) {}
-            }
-        } catch (Exception e) {
-            System.out.println("Logout failed: " + e.getMessage());
-        }
-
         if (driver != null) {
+            if (scenario.isFailed()) {
+                try {
+                    byte[] screenshot = ((TakesScreenshot) driver)
+                            .getScreenshotAs(OutputType.BYTES);
+                    scenario.attach(screenshot, "image/png", "Screenshot");
+                } catch (Exception e) {
+                    System.out.println("Screenshot failed: " + e.getMessage());
+                }
+            }
+
+            // Logout ก่อนปิด Browser
+            try {
+                List<WebElement> logoutBtn = driver.findElements(
+                    By.linkText("Log Out")
+                );
+                if (!logoutBtn.isEmpty()) {
+                    logoutBtn.get(0).click();
+                    System.out.println("Logged out successfully");
+                    try { Thread.sleep(1000); } catch (Exception e) {}
+                }
+            } catch (Exception e) {
+                System.out.println("Logout failed: " + e.getMessage());
+            }
+
             driver.quit();
+            driver = null;
         }
     }
 }
