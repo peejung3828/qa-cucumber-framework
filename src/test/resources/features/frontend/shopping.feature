@@ -10,7 +10,3 @@ Feature: Step2 - Shopping Cart
     Then total cost should be correct
     And user clicks proceed to checkout button
 
-  Scenario: Validate total cost calculation is correct
-    When user adds "Dior J'adore" with quantity 2
-    And user adds "Gucci Bloom Eau de" with quantity 3
-    Then total cost should equal "$419.95"

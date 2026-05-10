@@ -42,9 +42,9 @@ public class ShoppingSteps {
             String totalText = shopPage.getTotalCost();
             System.out.println("Total text: " + totalText);
 
-            double expectedIncrease = (ShopPage.DIOR_PRICE * diorQty)
-                                    + (ShopPage.GUCCI_PRICE * gucciQty);
-            System.out.println("Expected increase: $" + expectedIncrease);
+            double expectedTotal = (ShopPage.DIOR_PRICE * diorQty)
+                                 + (ShopPage.GUCCI_PRICE * gucciQty);
+            System.out.println("Expected total: $" + expectedTotal);
 
             String numericOnly = totalText.replaceAll("[^0-9.]", "").trim();
 
@@ -56,8 +56,8 @@ public class ShoppingSteps {
                 System.out.println("Actual increase: $" + actualIncrease);
 
                 Assert.assertEquals(
-                    "Total increase should be $" + expectedIncrease,
-                    expectedIncrease, actualIncrease, 0.01
+                    "Total should be $" + expectedTotal,
+                    expectedTotal, actualIncrease, 0.01
                 );
             } else {
                 System.out.println("Total text is empty");
@@ -70,38 +70,8 @@ public class ShoppingSteps {
         }
     }
 
-    @Then("total cost should equal {string}")
-    public void totalCostShouldEqual(String expectedTotal) {
-        String totalText = shopPage.getTotalCost();
-        System.out.println("Total text: " + totalText);
-
-        String numericOnly = totalText.replaceAll("[^0-9.]", "").trim();
-        System.out.println("Actual total: $" + numericOnly);
-
-        double expectedIncrease = (ShopPage.DIOR_PRICE * diorQty)
-                                + (ShopPage.GUCCI_PRICE * gucciQty);
-        double actualTotal = numericOnly.isEmpty() ? 0 : Double.parseDouble(numericOnly);
-        double actualIncrease = actualTotal - totalBefore;
-
-        System.out.println("Expected increase: $" + expectedIncrease);
-        System.out.println("Actual increase: $" + actualIncrease);
-
-        Assert.assertEquals(
-            "Total increase should match price x quantity",
-            expectedIncrease, actualIncrease, 0.01
-        );
-    }
-
     @And("user clicks proceed to checkout button")
     public void userClicksProceedToCheckoutButton() {
         shopPage.clickProceedToCheckout();
-    }
-
-    @Then("cart should be empty after clearing")
-    public void cartShouldBeEmptyAfterClearing() {
-        shopPage.clearCart();
-        String totalText = shopPage.getTotalCost();
-        System.out.println("Total after clear: " + totalText);
-        Assert.assertNotNull(totalText);
     }
 }
