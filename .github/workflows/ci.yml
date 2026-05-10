@@ -20,6 +20,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+
       - name: Start Docker container for API
         run: |
           docker run -d --name qa-practice-api \
